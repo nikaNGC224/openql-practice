@@ -1,65 +1,104 @@
 #include <GL/glut.h>
-#include <iostream>
+#include <GL/glu.h>
 
-void renderScene();
-void changeSize(int width, int height);
+// Параметры цилиндра
+GLUquadric* quadric = nullptr;
+float radius = 1.0f;  // Радиус цилиндра
+float height = 2.0f;  // Высота цилиндра
+int slices = 20;      // Количество сегментов по окружности
+int stacks = 10;      // Количество сегментов по высоте
 
-int main(int argc, char **argv)
+void init()
 {
-    std::cout << "OpenGL Practice\n";
+    // Задаем цвет фона
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-    /* init GLUT and create window */
-    glutInit(&argc, argv);
-    glutInitWindowPosition(100, 100);
-    glutInitWindowSize(700, 500);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
-    glutCreateWindow("OpenGL Practice");
-
-	/* register callbacks */
-    glutReshapeFunc(changeSize);
-    glutDisplayFunc(renderScene);
-
-	/* enter GLUT event processing cycle */
-    glutMainLoop();
+    // Инициализируем объект цилиндра
+    gluNewQuadric();
+    quadric = gluNewQuadric();
+    gluQuadricDrawStyle(quadric, GLU_LINE);  // Устанавливаем режим каркасного отображения
 }
 
-void renderScene()
-{
-    glClearColor(0.0, 0.749, 1.0, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+void drawAxes() {
+    // Рисуем оси координат
+    glBegin(GL_LINES);
 
-    glBegin(GL_TRIANGLES);
-    {
-        glVertex3f(-0.5, -0.5, -5.0);
-        glVertex3f(0.5, 0.0, -5.0);
-        glVertex3f(0.0, 0.5, -5.0);
-    }
+    // Ось X (красная)
+    glColor3f(1.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(1.0f, 0.0f, 0.0f);
+
+    // Ось Y (зеленая)
+    glColor3f(0.0f, 1.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 1.0f, 0.0f);
+
+    // Ось Z (синяя)
+    glColor3f(0.0f, 0.0f, 1.0f);
+    glVertex3f(0.0f, 0.0f, 0.0f);
+    glVertex3f(0.0f, 0.0f, 1.0f);
+
     glEnd();
+}
 
+void display()
+{
+    // Очищаем буфер цвета и буфер глубины
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glLoadIdentity();
+
+    // Настраиваем камеру
+    gluLookAt(4.0f, 4.0f, 4.0f,  // Позиция камеры
+              0.0f, 0.0f, 0.0f,  // Точка, на которую смотрим
+              0.0f, 1.0f, 0.0f); // Вектор "вверх"
+
+    drawAxes();
+
+    // Поворачиваем на -90 градусов вокруг оси X
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+
+    // Рисуем цилиндр
+    glColor3f(1.0f, 1.0f, 1.0f);  // Белый цвет цилиндра
+    gluCylinder(quadric, radius, radius, height, slices, stacks);
+
+    // Переключаем буферы
     glutSwapBuffers();
 }
 
-void changeSize(int width, int height)
+void reshape(int w, int h)
 {
-    // Prevent a divide by zero
-    if (height == 0)
-    {
-        height = 1;
-    }
-    double ratio = 1.0 * width / height;
+    // Устанавливаем окно просмотра
+    glViewport(0, 0, w, h);
 
-    // Use the Projection Matrix
+    // Переходим в матрицу проекций
     glMatrixMode(GL_PROJECTION);
-
-    // Reset Matrix
     glLoadIdentity();
+    gluPerspective(45.0, (double)w / (double)h, 1.0, 100.0);
 
-    // Set the viewport to be the entire window
-    glViewport(0, 0, width, height);
-
-    // Set the correct perspective
-    gluPerspective(45, ratio, 1, 1000);
-
-    // Get Back to the Modelview
+    // Возвращаемся к модельной матрице
     glMatrixMode(GL_MODELVIEW);
+}
+
+int main(int argc, char** argv)
+{
+    // Инициализация GLUT
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_DEPTH | GLUT_STENCIL);
+    glutInitWindowSize(800, 600);
+    glutCreateWindow("Wireframe Cylinder");
+
+    // Инициализация OpenGL
+    init();
+
+    // Регистрация функций
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+
+    // Основной цикл GLUT
+    glutMainLoop();
+
+    // Удаляем объект цилиндра при завершении
+    gluDeleteQuadric(quadric);
+
+    return 0;
 }
