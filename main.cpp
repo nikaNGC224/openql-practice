@@ -2,17 +2,122 @@
 #include <GL/glu.h>
 #include <cmath>
 
-// Параметры цилиндра
-GLUquadric* quadric = nullptr;
-float radius = 50.0f;  // Радиус цилиндра
-float height = 360.0f; // Высота цилиндра
-int slices = 20;       // Количество сегментов по окружности
-int stacks = 10;       // Количество сегментов по высоте
-float zoom = 700.0f;
 
-// Параметры сферы
-GLUquadric* sphereQuadric = nullptr;
-float sphereRadius = 300.0f;  // Радиус сферы
+/* @todo move to other files */
+/* @todo change to eng comments */
+/* @todo fix camera to more convenient usage */
+class Shape3D
+{
+public:
+    virtual ~Shape3D() = default;
+
+    void draw() const
+    {
+        glPushMatrix();  // Сохраняем текущую матрицу
+        glTranslatef(_x, _y, _z);
+        drawShape();
+        glPopMatrix();  // Восстанавливаем матрицу
+    }
+
+    void setPosition(float x, float y, float z)
+    {
+        _x = x;
+        _y = y;
+        _z = z;
+    }
+
+protected:
+    const int SLICES {20}; // Количество сегментов по окружности
+    const int STACKS {10}; // Количество сегментов по высоте
+
+    float _x{}, _y{}, _z{};
+private:
+    virtual void drawShape() const = 0;
+};
+
+class Cylinder : public Shape3D
+{
+public:
+    Cylinder() = delete;
+
+    Cylinder(float radius, float height)
+        : _radius(radius), _height(height)
+    {
+        _quadric = gluNewQuadric();
+        gluQuadricDrawStyle(_quadric, GLU_LINE);
+    }
+
+    ~Cylinder()
+    {
+        gluDeleteQuadric(_quadric);
+    }
+
+private:
+    GLUquadric* _quadric;
+    float _radius;
+    float _height;
+
+    void drawShape() const override
+    {
+        glColor3f(1.0f, 1.0f, 1.0f); // Белый цвет цилиндра
+        gluCylinder(_quadric, _radius, _radius, _height, SLICES, STACKS);
+    }
+};
+
+class Sphere : public Shape3D
+{
+public:
+    Sphere()
+    {
+        _quadric = gluNewQuadric();
+        gluQuadricDrawStyle(_quadric, GLU_LINE);
+    }
+
+    ~Sphere()
+    {
+        gluDeleteQuadric(_quadric);
+    }
+
+    float getRadius() const
+    {
+        return _radius;
+    }
+
+    void setRadius(float radius)
+    {
+        _radius = radius;
+    }
+
+    float getMinRadius() const
+    {
+        return MIN_RADIUS;
+    }
+
+    float getMaxRadius() const
+    {
+        return MAX_RADIUS;
+    }
+
+private:
+    const float MIN_RADIUS {300.0f};
+    const float MAX_RADIUS {MIN_RADIUS * 1.5f};
+
+    GLUquadric* _quadric;
+    float _radius {MIN_RADIUS};
+
+    void drawShape() const override
+    {
+        glColor3f(1.0f, 1.0f, 0.0f);  // Жёлтый цвет сферы
+        gluSphere(_quadric, _radius, SLICES, STACKS);
+    }
+};
+
+/* Global objects */
+Cylinder cylinder(50.0f, 360.0f);
+Sphere sphere;
+
+/* @todo mb remove from global? */
+float zoom = 700.0f;
 
 float cameraAngleZ = 0.0f;  // Угол поворота камеры вокруг оси Z
 float cameraOffsetZ = 0.0f;  // Смещение камеры вдоль оси Z
@@ -26,6 +131,7 @@ void display();
 void reshape(int w, int h);
 void handleMouseButton(int button, int state, int x, int y);
 void handleMouseMove(int x, int y);
+void handleKeyPress(u_char key, int x, int y);
 
 int main(int argc, char** argv)
 {
@@ -33,7 +139,7 @@ int main(int argc, char** argv)
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
-    glutCreateWindow("Wireframe Cylinder with Z Axis Up and Grid");
+    glutCreateWindow("Graphics");
 
     // Инициализация OpenGL
     init();
@@ -42,12 +148,10 @@ int main(int argc, char** argv)
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutMouseFunc(handleMouseButton);
+    glutKeyboardFunc(handleKeyPress);
 
     // Основной цикл GLUT
     glutMainLoop();
-
-    // Удаляем объект цилиндра при завершении
-    gluDeleteQuadric(quadric);
 }
 
 void init()
@@ -55,13 +159,8 @@ void init()
     // Задаем цвет фона
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-    // Инициализируем объект цилиндра
-    quadric = gluNewQuadric();
-    gluQuadricDrawStyle(quadric, GLU_LINE);  // Устанавливаем режим каркасного отображения
-
-    // Инициализируем объект сферы
-    sphereQuadric = gluNewQuadric();
-    gluQuadricDrawStyle(sphereQuadric, GLU_LINE);  // Устанавливаем режим каркасного отображения
+    cylinder.setPosition(50.0f, 40.0f, 0.0f);
+    sphere.setPosition(50.0f, 40.0f, 0.0f);
 }
 
 void drawAxes()
@@ -119,14 +218,12 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
-    // Позиция камеры с учётом угла поворота вокруг оси Z
+    // Позиция камеры
     gluLookAt(std::cos(cameraAngleZ) * zoom,
               std::sin(cameraAngleZ) * zoom,
               zoom + cameraOffsetZ, // Позиция камеры
               0.0f, 0.0f, 0.0f,     // Точка, на которую смотрим
               0.0f, 0.0f, 1.0f);    // Вектор "вверх" вдоль оси Z
-    // @todo fix камеру, работает не очень
-    // Подумать как будет удобнее
 
     // Рисуем сетку
     drawGrid();
@@ -135,19 +232,10 @@ void display()
     drawAxes();
 
     // Рисуем цилиндр
-    glPushMatrix();  // Сохраняем текущую матрицу
-    // Сместим цилиндр так, чтобы его центр основания был в точке (50, 40)
-    glTranslatef(50.0f, 40.0f, 0.0f);
-    glColor3f(1.0f, 1.0f, 1.0f);  // Белый цвет цилиндра
-    gluCylinder(quadric, radius, radius, height, slices, stacks);
-    glPopMatrix();  // Восстанавливаем матрицу
+    cylinder.draw();
 
     // Рисуем сферу
-    glPushMatrix();  // Сохраняем текущую матрицу
-    glTranslatef(50.0f, 40.0f, 0.0f);  // Сместим сферу так, чтобы её центр был в точке (50, 40)
-    glColor3f(1.0f, 1.0f, 0.0f);  // Жёлтый цвет сферы
-    gluSphere(sphereQuadric, sphereRadius, slices, stacks);
-    glPopMatrix();  // Восстанавливаем матрицу
+    sphere.draw();
 
     // Переключаем буферы
     glutSwapBuffers();
@@ -206,11 +294,40 @@ void handleMouseMove(int x, int y)
     int dx = x - lastMouseX;       // Изменение координаты X
     int dy = y - lastMouseY;        // Изменение координаты Y
 
-    cameraAngleZ += dx * 0.001f;    // Регулируйте множитель для чувствительности
+    cameraAngleZ -= dx * 0.001f;    // Регулируйте множитель для чувствительности
     cameraOffsetZ += dy * 1.0f;     // Обновляем смещение камеры вдоль оси Z
 
     lastMouseX = x;                // Обновляем последнюю позицию X
     lastMouseY = y;                // Обновляем последнюю позицию Y
 
     glutPostRedisplay();           // Перерисовываем сцену
+}
+
+void handleKeyPress(u_char key, int x, int y)
+{
+    if (key == 'a' || key == 'A')  // Проверяем нажатие клавиши A
+    {
+        if (sphere.getRadius() > sphere.getMinRadius())
+        {
+            sphere.setRadius(sphere.getRadius() - 10.0f);
+        }
+        else
+        {
+            sphere.setRadius(sphere.getMinRadius());
+        }
+    }
+    else if (key == 'd' || key == 'D')  // Проверяем нажатие клавиши D
+    {
+        if (sphere.getRadius() < sphere.getMaxRadius())
+        {
+            sphere.setRadius(sphere.getRadius() + 10.0f);
+        }
+        else
+        {
+            sphere.setRadius(sphere.getMaxRadius());
+
+        }
+    }
+
+    glutPostRedisplay();  // Перерисовываем сцену
 }
