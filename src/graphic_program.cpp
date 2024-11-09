@@ -1,15 +1,26 @@
 #include "graphic_program.hpp"
 
+#include <cmath>
+
 /* static fields */
 int GraphicProgram::_sceneIndex {};
 
-GraphicProgram::Scene GraphicProgram::scene1({ 50.0f, 360.0f, 300.0f,
-                                              100.0f,  50.0f, 100.0f});
+GraphicProgram::Scene GraphicProgram::scene1({ 50.0f, 360.0f, 300.0f }); /* is it convenient? */
+
+GraphicProgram::Scene GraphicProgram::scene2({ 0.0f,    0.0f,   0.0f,    /* and this */
+                                              100.0f,  50.0f, 100.0f });
 
 float GraphicProgram::_zoom {500.0f};
 
 float GraphicProgram::_cameraX {};
 float GraphicProgram::_cameraY {};
+
+float GraphicProgram::_lookX {};
+float GraphicProgram::_lookY {};
+float GraphicProgram::_lookZ {};
+
+int   GraphicProgram::_lastMouseX {};
+int   GraphicProgram::_lastMouseY {};
 
 void GraphicProgram::init(int argc, char** argv)
 {
@@ -26,8 +37,25 @@ void GraphicProgram::init(int argc, char** argv)
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutMouseFunc(handleMouseButton);
+    glutPassiveMotionFunc(handleMouseMotion);
     glutKeyboardFunc(handleKeyPress);
     glutSpecialFunc(handleSpecialKeyPress);
+
+    initScene1();
+    initScene2();
+
+}
+
+void GraphicProgram::initScene1()
+{
+    scene1._cylinder.setPosition(50.0f, 40.0f, 0.0f);
+    scene1._sphere.setPosition(50.0f, 40.0f, 0.0f);
+}
+
+void GraphicProgram::initScene2()
+{
+    scene2._cube.setPosition(0.0f, -100.0f, 0.0f);
+    scene2._cone.setPosition(0.0f, 50.0f, 0.0f);
 }
 
 void GraphicProgram::start()
@@ -109,8 +137,9 @@ void GraphicProgram::display()
     glLoadIdentity();
 
     // Позиция камеры
+    /* Возможно, стоит менять zoom, чтобы всё было корректно */
     gluLookAt(_zoom + _cameraX, _cameraY, _zoom,  // Позиция камеры
-                      _cameraX, _cameraY,  0.0f,  // Точка, на которую смотрим
+                      _cameraX, _cameraY, _lookZ,  // Точка, на которую смотрим
                           0.0f,     0.0f,  1.0f); // Вектор "вверх" вдоль оси Z
 
     /* add map */
@@ -145,12 +174,10 @@ void GraphicProgram::displayScene1()
 
     // Рисуем оси
     drawAxes();
-    drawLine();
+
     // Рисуем цилиндр
     scene1._cylinder.draw();
     scene1._sphere.draw();
-    scene1._cube.draw();
-    scene1._cone.draw();
 }
 
 void GraphicProgram::displayScene2()
@@ -160,6 +187,9 @@ void GraphicProgram::displayScene2()
 
     // Рисуем оси
     drawAxes();
+
+    scene2._cube.draw();
+    scene2._cone.draw();
 }
 
 void GraphicProgram::reshape(int w, int h)
@@ -198,6 +228,23 @@ void GraphicProgram::handleMouseButton(int button, int state, int x, int y)
 
     glutPostRedisplay();  // Перерисовываем сцену
 }
+
+void GraphicProgram::handleMouseMotion(int x, int y)
+{
+    int deltaX = x - _lastMouseX;        // Определяем смещение мыши по Y
+    _lookX += deltaX * 0.5f;
+
+    int deltaY = y - _lastMouseY;        // Определяем смещение мыши по Y
+    _lookZ += deltaY * 0.5f;       // Изменяем угол наклона камеры
+
+    // Ограничиваем угол наклона (например, от -89 до +89 градусов, чтобы не перевернуть камеру)
+    /* if (_cameraAngleZ > 89.0f) _cameraAngleZ = 89.0f;
+    if (_cameraAngleZ < -89.0f) _cameraAngleZ = -89.0f; */
+
+    _lastMouseY = y;                     // Обновляем последнюю позицию Y
+    glutPostRedisplay();                // Перерисовываем сцену
+}
+
 
 void GraphicProgram::handleKeyPress(u_char key, int x, int y)
 {
@@ -262,6 +309,16 @@ void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
                 break;
             }
 
+            default:
+            {
+                break;
+            }
+        }
+    }
+    else if (_sceneIndex == 1)
+    {
+        switch (key)
+        {
             case GLUT_KEY_LEFT:
             {
                 scene1._cone.incRotationAngleX(STEP_SIZE);

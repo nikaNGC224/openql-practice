@@ -4,6 +4,8 @@ project(graphic_program)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/build)
 
+set(CMAKE_BUILD_TYPE Debug)
+
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
 

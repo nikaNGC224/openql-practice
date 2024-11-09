@@ -7,7 +7,7 @@ class Sphere : public Shape3D
 {
 public:
     Sphere(const float& radius)
-        : Shape3D(), _radius(_radius), MIN_RADIUS(radius), MAX_RADIUS(radius * 1.5f)
+        : Shape3D(), _radius(radius), MIN_RADIUS(radius), MAX_RADIUS(radius * 1.5f)
     {}
 
     void incRadius(float incStep)
