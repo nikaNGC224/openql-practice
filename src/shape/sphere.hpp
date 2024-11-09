@@ -6,35 +6,33 @@
 class Sphere : public Shape3D
 {
 public:
-    Sphere()
-        : Shape3D()
+    Sphere(const float& radius)
+        : Shape3D(), _radius(_radius), MIN_RADIUS(radius), MAX_RADIUS(radius * 1.5f)
     {}
 
-    float getRadius() const
+    void incRadius(float incStep)
     {
-        return _radius;
+        _radius += incStep;
+        if (_radius > MAX_RADIUS)
+        {
+            _radius = MAX_RADIUS;
+        }
     }
 
-    void setRadius(float radius)
+    void decRadius(float decStep)
     {
-        _radius = radius;
-    }
-
-    float getMinRadius() const
-    {
-        return MIN_RADIUS;
-    }
-
-    float getMaxRadius() const
-    {
-        return MAX_RADIUS;
+        _radius -= decStep;
+        if (_radius < MIN_RADIUS)
+        {
+            _radius = MIN_RADIUS;
+        }
     }
 
 private:
-    const float MIN_RADIUS {300.0f};
-    const float MAX_RADIUS {MIN_RADIUS * 1.5f};
+    const float MIN_RADIUS;
+    const float MAX_RADIUS;
 
-    float _radius {MIN_RADIUS};
+    float _radius;
 
     void drawShape() const override
     {

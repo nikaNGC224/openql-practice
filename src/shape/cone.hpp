@@ -12,28 +12,27 @@ public:
         : Shape3D(), _radius(radius), _height(height)
     {}
 
-    void setRotationAngleX(const float& angle)
+    void incRotationAngleX(float incStep)
     {
-        if (angle >= 360.0f)
+        _rotationAngleX += incStep;
+        if (_rotationAngleX >= MAX_DEGREE)
         {
-            _rotationAngleX = angle - 360.0f;
-        }
-        else if (angle <= -360.0f)
-        {
-            _rotationAngleX = angle + 360.0f;
-        }
-        else
-        {
-            _rotationAngleX = angle;
+            _rotationAngleX -= MAX_DEGREE;
         }
     }
 
-    float getRotationAngleX() const
+    void decRotationAngleX(float decStep)
     {
-        return _rotationAngleX;
+        _rotationAngleX -= decStep;
+        if (_rotationAngleX <= -MAX_DEGREE)
+        {
+            _rotationAngleX += MAX_DEGREE;
+        }
     }
 
 private:
+    const float MAX_DEGREE {360.0f};
+
     float _radius;
     float _height;
     float _rotationAngleX{};

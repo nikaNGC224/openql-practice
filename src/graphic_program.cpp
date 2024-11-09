@@ -1,13 +1,14 @@
 #include "graphic_program.hpp"
 
-Cylinder GraphicProgram::_cylinder(50.0f, 360.0f);
-Sphere   GraphicProgram::_sphere;
-Cube     GraphicProgram::_cube(100.0f);
-Cone     GraphicProgram::_cone(50.0f, 100.0f);
+/* static fields */
+int GraphicProgram::_sceneIndex {};
+
+GraphicProgram::Scene GraphicProgram::scene1({ 50.0f, 360.0f, 300.0f,
+                                              100.0f,  50.0f, 100.0f});
 
 float GraphicProgram::_zoom {500.0f};
 
-float GraphicProgram::_cameraX {100.0f};
+float GraphicProgram::_cameraX {};
 float GraphicProgram::_cameraY {};
 
 void GraphicProgram::init(int argc, char** argv)
@@ -20,11 +21,6 @@ void GraphicProgram::init(int argc, char** argv)
 
     // Задаем цвет фона
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
-    _cylinder.setPosition(50.0f, 40.0f, 0.0f);
-    _sphere.setPosition(50.0f, 40.0f, 0.0f);
-    _cube.setPosition(0.0f, -550.0f, 0.0f);
-    _cone.setPosition(0.0f, -400.0f, 0.0f);
 
     // Регистрация функций обратного вызова
     glutDisplayFunc(display);
@@ -40,6 +36,23 @@ void GraphicProgram::start()
     glutMainLoop();
 }
 
+void GraphicProgram::drawLine()
+{
+    glLineWidth(2.0f);
+
+    glBegin(GL_LINES);
+
+    /* todo: make universal func for  any line */
+    // Ось X под примитивом (красная)
+    glColor3f(    1.0f,    0.0f, 0.0f);
+    glVertex3f(-100.0f, -400.0f, 0.0f);
+    glVertex3f( 100.0f, -400.0f, 0.0f);
+
+    glEnd();
+
+    glLineWidth(1.0f);
+}
+
 void GraphicProgram::drawAxes()
 {
     glLineWidth(2.0f);
@@ -48,24 +61,19 @@ void GraphicProgram::drawAxes()
     glBegin(GL_LINES);
 
     // Ось X (красная)
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
+    glColor3f(   1.0f, 0.0f, 0.0f);
+    glVertex3f(  0.0f, 0.0f, 0.0f);
     glVertex3f(100.0f, 0.0f, 0.0f);
 
     // Ось Y (зеленая)
-    glColor3f(0.0f, 1.0f, 0.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
+    glColor3f( 0.0f,   1.0f, 0.0f);
+    glVertex3f(0.0f,   0.0f, 0.0f);
     glVertex3f(0.0f, 100.0f, 0.0f);
 
     // Ось Z (синяя)
-    glColor3f(0.0f, 0.0f, 1.0f);
-    glVertex3f(0.0f, 0.0f, 0.0f);
+    glColor3f( 0.0f, 0.0f,   1.0f);
+    glVertex3f(0.0f, 0.0f,   0.0f);
     glVertex3f(0.0f, 0.0f, 100.0f);
-
-    // Ось X под примитивом (красная)
-    glColor3f(1.0f, 0.0f, 0.0f);
-    glVertex3f(-100.0f, -400.0f, 0.0f);
-    glVertex3f(100.0f, -400.0f, 0.0f);
 
     glEnd();
 
@@ -78,17 +86,17 @@ void GraphicProgram::drawGrid()
     glBegin(GL_LINES);
 
     // Рисуем горизонтальные линии
-    for (float y = -100.0f; y <= 100.0f; y += 10.0f)
+    for (float y = -100.0f; y <= 100.0f; y += STEP_SIZE)
     {
         glVertex3f(-100.0f, y, 0.0f);
-        glVertex3f(100.0f, y, 0.0f);
+        glVertex3f( 100.0f, y, 0.0f);
     }
 
     // Рисуем вертикальные линии
-    for (float x = -100.0f; x <= 100.0f; x += 10.0f)
+    for (float x = -100.0f; x <= 100.0f; x += STEP_SIZE)
     {
         glVertex3f(x, -100.0f, 0.0f);
-        glVertex3f(x, 100.0f, 0.0f);
+        glVertex3f(x,  100.0f, 0.0f);
     }
 
     glEnd();
@@ -102,23 +110,56 @@ void GraphicProgram::display()
 
     // Позиция камеры
     gluLookAt(_zoom + _cameraX, _cameraY, _zoom,  // Позиция камеры
-              _cameraX, _cameraY, 0.0f,           // Точка, на которую смотрим
-              0.0f, 0.0f, 1.0f);                  // Вектор "вверх" вдоль оси Z
+                      _cameraX, _cameraY,  0.0f,  // Точка, на которую смотрим
+                          0.0f,     0.0f,  1.0f); // Вектор "вверх" вдоль оси Z
 
+    /* add map */
+    switch (_sceneIndex)
+    {
+        case 0:
+        {
+            displayScene1();
+            break;
+        }
+
+        case 1:
+        {
+            displayScene2();
+            break;
+        }
+
+        default:
+        {
+            break;
+        }
+    }
+
+    // Переключаем буферы
+    glutSwapBuffers();
+}
+
+void GraphicProgram::displayScene1()
+{
     // Рисуем сетку
     drawGrid();
 
     // Рисуем оси
     drawAxes();
-
+    drawLine();
     // Рисуем цилиндр
-    _cylinder.draw();
-    _sphere.draw();
-    _cube.draw();
-    _cone.draw();
+    scene1._cylinder.draw();
+    scene1._sphere.draw();
+    scene1._cube.draw();
+    scene1._cone.draw();
+}
 
-    // Переключаем буферы
-    glutSwapBuffers();
+void GraphicProgram::displayScene2()
+{
+    // Рисуем сетку
+    drawGrid();
+
+    // Рисуем оси
+    drawAxes();
 }
 
 void GraphicProgram::reshape(int w, int h)
@@ -129,7 +170,7 @@ void GraphicProgram::reshape(int w, int h)
     // Переходим в матрицу проекций
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0, (double)w / (double)h, 1.0, 2000.0);
+    gluPerspective(45.0, static_cast<double>(w) / static_cast<double>(h), MIN_ZOOM, MAX_ZOOM);
 
     // Возвращаемся к модельной матрице
     glMatrixMode(GL_MODELVIEW);
@@ -140,18 +181,18 @@ void GraphicProgram::handleMouseButton(int button, int state, int x, int y)
     // Проверяем, прокручено ли колёсико вверх или вниз
     if (button == 3 && state == GLUT_UP)
     {  // Колёсико прокручено вверх
-        _zoom -= 10.0f;  // Уменьшаем значение zoom, чтобы приблизить
-        if (_zoom < 100.0f)
+        _zoom -= STEP_SIZE;  // Уменьшаем значение zoom, чтобы приблизить
+        if (_zoom < MIN_ZOOM)
         {
-            _zoom = 100.0f;  // Ограничиваем минимальное приближение
+            _zoom = MIN_ZOOM;  // Ограничиваем минимальное приближение
         }
     }
     else if (button == 4 && state == GLUT_UP)
     {  // Колёсико прокручено вниз
-        _zoom += 10.0f;  // Увеличиваем значение zoom, чтобы отдалить
-        if (_zoom > 2000.0f) // @todo мах и мин значения можно вынести в константы
+        _zoom += STEP_SIZE;  // Увеличиваем значение zoom, чтобы отдалить
+        if (_zoom > MAX_ZOOM)
         {
-            _zoom = 2000.0f;  // Ограничиваем максимальное отдаление
+            _zoom = MAX_ZOOM;  // Ограничиваем максимальное отдаление
         }
     }
 
@@ -160,35 +201,39 @@ void GraphicProgram::handleMouseButton(int button, int state, int x, int y)
 
 void GraphicProgram::handleKeyPress(u_char key, int x, int y)
 {
+    /* enum class or smth like that */
     switch (key)
     {
         case 'w':
         case 'W':
         {
-            _cameraX -= 10.0f;
+            _cameraX -= STEP_SIZE;
             break;
         }
 
         case 's':
         case 'S':
         {
-            _cameraX += 10.0f;
+            _cameraX += STEP_SIZE;
             break;
         }
 
         case 'a':
         case 'A':
         {
-            _cameraY -= 10.0f;
+            _cameraY -= STEP_SIZE;
             break;
         }
 
         case 'd':
         case 'D':
         {
-            _cameraY += 10.0f;
+            _cameraY += STEP_SIZE;
             break;
         }
+
+        case '\t':
+            _sceneIndex = (_sceneIndex + 1) % 2;
 
         default:
         {
@@ -201,51 +246,38 @@ void GraphicProgram::handleKeyPress(u_char key, int x, int y)
 
 void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
 {
-    switch (key)
+    if (_sceneIndex == 0)
     {
-        case GLUT_KEY_UP:
+        switch (key)
         {
-            if (_sphere.getRadius() < _sphere.getMaxRadius())
+            case GLUT_KEY_UP:
             {
-                _sphere.setRadius(_sphere.getRadius() + 10.0f);
-            }
-            else
-            {
-                _sphere.setRadius(_sphere.getMaxRadius());
-
-            }
-            break;
-        }
-
-        case GLUT_KEY_DOWN:
-        {
-            if (_sphere.getRadius() > _sphere.getMinRadius())
-            {
-                _sphere.setRadius(_sphere.getRadius() - 10.0f);
-            }
-            else
-            {
-                _sphere.setRadius(_sphere.getMinRadius());
+                scene1._sphere.incRadius(STEP_SIZE);
+                break;
             }
 
-            break;
-        }
+            case GLUT_KEY_DOWN:
+            {
+                scene1._sphere.decRadius(STEP_SIZE);
+                break;
+            }
 
-        case GLUT_KEY_LEFT:
-        {
-            _cone.setRotationAngleX(_cone.getRotationAngleX() + 10.0f);
-            break;
-        }
+            case GLUT_KEY_LEFT:
+            {
+                scene1._cone.incRotationAngleX(STEP_SIZE);
+                break;
+            }
 
-        case GLUT_KEY_RIGHT:
-        {
-            _cone.setRotationAngleX(_cone.getRotationAngleX() - 10.0f);
-            break;
-        }
+            case GLUT_KEY_RIGHT:
+            {
+                scene1._cone.decRotationAngleX(STEP_SIZE);
+                break;
+            }
 
-        default:
-        {
-            break;
+            default:
+            {
+                break;
+            }
         }
     }
 
