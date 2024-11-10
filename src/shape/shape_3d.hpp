@@ -13,6 +13,11 @@ public:
         Solid
     };
 
+    virtual ~Shape3D()
+    {
+        gluDeleteQuadric(_quadric);
+    }
+
     void draw() const
     {
         glPushMatrix();  // Сохраняем текущую матрицу
@@ -41,11 +46,6 @@ protected:
     {
         _quadric = gluNewQuadric();
         gluQuadricDrawStyle(_quadric, GLU_LINE);
-    }
-
-    virtual ~Shape3D()
-    {
-        gluDeleteQuadric(_quadric);
     }
 
 private:
