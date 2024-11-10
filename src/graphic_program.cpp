@@ -7,25 +7,27 @@ int GraphicProgram::_sceneIndex {};
 
 GraphicProgram::Scene GraphicProgram::scene1({ 50.0f, 360.0f, 300.0f }); /* is it convenient? */
 
-GraphicProgram::Scene GraphicProgram::scene2({ 0.0f,    0.0f,   0.0f,    /* and this */
-                                              100.0f,  50.0f, 100.0f });
+GraphicProgram::Scene GraphicProgram::scene2({  0.0f,  0.0f,   0.0f,    /* and this */
+                                              100.0f, 50.0f, 100.0f });
+
+GraphicProgram::Scene GraphicProgram::scene3({ 50.0f,    50.0f,   50.0f,    /* and this */
+                                               100.0f,  50.0f, 100.0f });
+
+float GraphicProgram::_cameraX {300.0f};
+float GraphicProgram::_cameraY {};
+float GraphicProgram::_cameraZ {500.0f};
 
 float GraphicProgram::_zoom {500.0f};
-
-float GraphicProgram::_cameraX {};
-float GraphicProgram::_cameraY {};
-
-float GraphicProgram::_lookX {};
-float GraphicProgram::_lookY {};
-float GraphicProgram::_lookZ {};
-
-int   GraphicProgram::_lastMouseX {};
-int   GraphicProgram::_lastMouseY {};
 
 void GraphicProgram::init(int argc, char** argv)
 {
     // Инициализация GLUT
     glutInit(&argc, argv);
+
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
     glutCreateWindow("Graphics");
@@ -37,13 +39,12 @@ void GraphicProgram::init(int argc, char** argv)
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutMouseFunc(handleMouseButton);
-    glutPassiveMotionFunc(handleMouseMotion);
     glutKeyboardFunc(handleKeyPress);
     glutSpecialFunc(handleSpecialKeyPress);
 
     initScene1();
     initScene2();
-
+    initScene3();
 }
 
 void GraphicProgram::initScene1()
@@ -54,8 +55,15 @@ void GraphicProgram::initScene1()
 
 void GraphicProgram::initScene2()
 {
-    scene2._cube.setPosition(0.0f, -100.0f, 0.0f);
-    scene2._cone.setPosition(0.0f, 50.0f, 0.0f);
+    scene2._cube.setPosition(0.0f, -100.0f, 50.0f);
+    scene2._cone.setPosition(0.0f, 100.0f, 0.0f);
+}
+
+void GraphicProgram::initScene3()
+{
+    scene3._sphere.setPosition(100.0f, 0.0f, 100.0f);
+    scene3._cube.setPosition(100.0f, -150.0f, 100.0f);
+    scene3._cone.setPosition(100.0f, 150.0f, 50.0f);
 }
 
 void GraphicProgram::start()
@@ -132,14 +140,14 @@ void GraphicProgram::drawGrid()
 
 void GraphicProgram::display()
 {
-    // Очищаем буфер цвета и буфер глубины
+    /* clear color buffer & depth buffer */
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
     // Позиция камеры
     /* Возможно, стоит менять zoom, чтобы всё было корректно */
     gluLookAt(_zoom + _cameraX, _cameraY, _zoom,  // Позиция камеры
-                      _cameraX, _cameraY, _lookZ,  // Точка, на которую смотрим
+                      _cameraX, _cameraY,  0.0f,  // Точка, на которую смотрим
                           0.0f,     0.0f,  1.0f); // Вектор "вверх" вдоль оси Z
 
     /* add map */
@@ -155,6 +163,11 @@ void GraphicProgram::display()
         {
             displayScene2();
             break;
+        }
+
+        case 2:
+        {
+            displayScene3();
         }
 
         default:
@@ -182,7 +195,7 @@ void GraphicProgram::displayScene1()
 
 void GraphicProgram::displayScene2()
 {
-    // Рисуем сетку
+    /* todo: make longer */
     drawGrid();
 
     // Рисуем оси
@@ -190,6 +203,15 @@ void GraphicProgram::displayScene2()
 
     scene2._cube.draw();
     scene2._cone.draw();
+}
+
+void GraphicProgram::displayScene3()
+{
+    drawAxes();
+
+    scene3._cone.draw();
+    scene3._cube.draw();
+    scene3._sphere.draw();
 }
 
 void GraphicProgram::reshape(int w, int h)
@@ -229,23 +251,6 @@ void GraphicProgram::handleMouseButton(int button, int state, int x, int y)
     glutPostRedisplay();  // Перерисовываем сцену
 }
 
-void GraphicProgram::handleMouseMotion(int x, int y)
-{
-    int deltaX = x - _lastMouseX;        // Определяем смещение мыши по Y
-    _lookX += deltaX * 0.5f;
-
-    int deltaY = y - _lastMouseY;        // Определяем смещение мыши по Y
-    _lookZ += deltaY * 0.5f;       // Изменяем угол наклона камеры
-
-    // Ограничиваем угол наклона (например, от -89 до +89 градусов, чтобы не перевернуть камеру)
-    /* if (_cameraAngleZ > 89.0f) _cameraAngleZ = 89.0f;
-    if (_cameraAngleZ < -89.0f) _cameraAngleZ = -89.0f; */
-
-    _lastMouseY = y;                     // Обновляем последнюю позицию Y
-    glutPostRedisplay();                // Перерисовываем сцену
-}
-
-
 void GraphicProgram::handleKeyPress(u_char key, int x, int y)
 {
     /* enum class or smth like that */
@@ -280,7 +285,7 @@ void GraphicProgram::handleKeyPress(u_char key, int x, int y)
         }
 
         case '\t':
-            _sceneIndex = (_sceneIndex + 1) % 2;
+            _sceneIndex = (_sceneIndex + 1) % 3;
 
         default:
         {
@@ -321,13 +326,13 @@ void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
         {
             case GLUT_KEY_LEFT:
             {
-                scene1._cone.incRotationAngleX(STEP_SIZE);
+                scene2._cone.incRotationAngleX(STEP_SIZE);
                 break;
             }
 
             case GLUT_KEY_RIGHT:
             {
-                scene1._cone.decRotationAngleX(STEP_SIZE);
+                scene2._cone.decRotationAngleX(STEP_SIZE);
                 break;
             }
 

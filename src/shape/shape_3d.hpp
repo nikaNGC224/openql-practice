@@ -7,6 +7,12 @@
 class Shape3D
 {
 public:
+    enum class Mode
+    {
+        Wire,
+        Solid
+    };
+
     void draw() const
     {
         glPushMatrix();  // Сохраняем текущую матрицу
@@ -23,9 +29,11 @@ public:
     }
 
 protected:
-    GLUquadric* _quadric;
     const int SLICES {20}; // Количество сегментов по окружности
     const int STACKS {10}; // Количество сегментов по высоте
+
+    GLUquadric* _quadric;
+    Mode _mode;
 
     float _x{}, _y{}, _z{};
 
