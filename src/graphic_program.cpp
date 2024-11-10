@@ -5,13 +5,17 @@
 /* static fields */
 int GraphicProgram::_sceneIndex {};
 
-GraphicProgram::Scene GraphicProgram::scene1({ 50.0f, 360.0f, 300.0f }); /* is it convenient? */
+GraphicProgram::Scene GraphicProgram::scene1;
+GraphicProgram::Scene GraphicProgram::scene2;
+GraphicProgram::Scene GraphicProgram::scene3;
 
-GraphicProgram::Scene GraphicProgram::scene2({  0.0f,  0.0f,   0.0f,    /* and this */
+/* GraphicProgram::Scene GraphicProgram::scene1({ 50.0f, 360.0f, 300.0f });
+
+GraphicProgram::Scene GraphicProgram::scene2({  0.0f,  0.0f,   0.0f,
                                               100.0f, 50.0f, 100.0f });
 
-GraphicProgram::Scene GraphicProgram::scene3({ 50.0f,    50.0f,   50.0f,    /* and this */
-                                               100.0f,  50.0f, 100.0f });
+GraphicProgram::Scene GraphicProgram::scene3({ 50.0f,    50.0f,   50.0f,
+                                               100.0f,  50.0f, 100.0f }); */
 
 float GraphicProgram::_cameraX {300.0f};
 float GraphicProgram::_cameraY {};
@@ -49,21 +53,31 @@ void GraphicProgram::init(int argc, char** argv)
 
 void GraphicProgram::initScene1()
 {
-    scene1._cylinder.setPosition(50.0f, 40.0f, 0.0f);
-    scene1._sphere.setPosition(50.0f, 40.0f, 0.0f);
+    scene1.addQuadric(std::make_unique<Cylinder>(50.0f, 360.0f));
+    scene1.addQuadric(std::make_unique<Sphere>(300.0f));
+
+    scene1.quadrics.at(0)->setPosition(50.0f, 40.0f, 0.0f);
+    scene1.quadrics.at(1)->setPosition(50.0f, 40.0f, 0.0f);
 }
 
 void GraphicProgram::initScene2()
 {
-    scene2._cube.setPosition(0.0f, -100.0f, 50.0f);
-    scene2._cone.setPosition(0.0f, 100.0f, 0.0f);
+    scene2.addQuadric(std::make_unique<Cube>(100.0f));
+    scene2.addQuadric(std::make_unique<Cone>(50.0f, 100.0f));
+
+    scene2.quadrics.at(0)->setPosition(0.0f, -100.0f, 50.0f);
+    scene2.quadrics.at(1)->setPosition(0.0f, 100.0f, 0.0f);
 }
 
 void GraphicProgram::initScene3()
 {
-    scene3._sphere.setPosition(100.0f, 0.0f, 100.0f);
-    scene3._cube.setPosition(100.0f, -150.0f, 100.0f);
-    scene3._cone.setPosition(100.0f, 150.0f, 50.0f);
+    scene3.addQuadric(std::make_unique<Sphere>(50.0f));
+    scene3.addQuadric(std::make_unique<Cube>(100.0f));
+    scene3.addQuadric(std::make_unique<Cone>(50.0f, 100.0f));
+
+    scene3.quadrics.at(0)->setPosition(100.0f, 0.0f, 100.0f);
+    scene3.quadrics.at(1)->setPosition(100.0f, -150.0f, 100.0f);
+    scene3.quadrics.at(2)->setPosition(100.0f, 150.0f, 50.0f);
 }
 
 void GraphicProgram::start()
@@ -189,8 +203,7 @@ void GraphicProgram::displayScene1()
     drawAxes();
 
     // Рисуем цилиндр
-    scene1._cylinder.draw();
-    scene1._sphere.draw();
+    scene1.draw();
 }
 
 void GraphicProgram::displayScene2()
@@ -201,17 +214,14 @@ void GraphicProgram::displayScene2()
     // Рисуем оси
     drawAxes();
 
-    scene2._cube.draw();
-    scene2._cone.draw();
+    scene2.draw();
 }
 
 void GraphicProgram::displayScene3()
 {
     drawAxes();
 
-    scene3._cone.draw();
-    scene3._cube.draw();
-    scene3._sphere.draw();
+    scene3.draw();
 }
 
 void GraphicProgram::reshape(int w, int h)
@@ -304,13 +314,15 @@ void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
         {
             case GLUT_KEY_UP:
             {
-                scene1._sphere.incRadius(STEP_SIZE);
+                auto sphere = dynamic_cast<Sphere*>(scene1.quadrics.at(1).get());
+                sphere->incRadius(STEP_SIZE);
                 break;
             }
 
             case GLUT_KEY_DOWN:
             {
-                scene1._sphere.decRadius(STEP_SIZE);
+                auto sphere = dynamic_cast<Sphere*>(scene1.quadrics.at(1).get());
+                sphere->decRadius(STEP_SIZE);
                 break;
             }
 
@@ -324,9 +336,10 @@ void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
     {
         switch (key)
         {
-            case GLUT_KEY_LEFT:
+            /* case GLUT_KEY_LEFT:
             {
                 scene2._cone.incRotationAngleX(STEP_SIZE);
+                auto cone = dynamic_cast<Sphere*>(scene2.quadrics.at(1).get());
                 break;
             }
 
@@ -334,7 +347,7 @@ void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
             {
                 scene2._cone.decRotationAngleX(STEP_SIZE);
                 break;
-            }
+            } */
 
             default:
             {

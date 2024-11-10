@@ -6,6 +6,10 @@
 #include "shape/cube.hpp"
 #include "shape/cone.hpp"
 
+#include <memory>
+#include <vector>
+#include <algorithm>
+
 class GraphicProgram
 {
 public:
@@ -23,6 +27,8 @@ private:
 
     static int _sceneIndex;
 
+    /* Предлагаю сделать вектор объектов в сцене, и отдельно в ините объектов вводить параметры*/
+
     struct SceneParams
     {
         float cylinderRadius;
@@ -36,17 +42,23 @@ private:
     class Scene
     {
     public:
-        Cylinder _cylinder;
-        Sphere _sphere;
-        Cube _cube;
-        Cone _cone;
+        /* todo: change to map */
+        std::vector<std::unique_ptr<Shape3D>> quadrics;
 
-        Scene(const SceneParams& params)
-        :   _cylinder(params.cylinderRadius, params.cylinderHeight),
-            _sphere(params.sphereRadius),
-            _cube(params.cubeSize),
-            _cone(params.coneRadius, params.coneHeight)
-        {}
+        void addQuadric(std::unique_ptr<Shape3D> quadric)
+        {
+            quadrics.push_back(std::move(quadric));
+        }
+
+        void draw()
+        {
+            std::for_each(quadrics.begin(),
+                          quadrics.end(),
+                          [](const std::unique_ptr<Shape3D>& q) { q->draw(); });
+        }
+
+       Scene() = default;
+       ~Scene() = default;
     };
 
     static Scene scene1;
