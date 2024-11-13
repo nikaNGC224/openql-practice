@@ -9,6 +9,7 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
+#include <map>
 
 class GraphicProgram
 {
@@ -27,38 +28,42 @@ private:
 
     static int _sceneIndex;
 
-    /* Предлагаю сделать вектор объектов в сцене, и отдельно в ините объектов вводить параметры*/
-
-    struct SceneParams
+    enum class ShapeType
     {
-        float cylinderRadius;
-        float cylinderHeight;
-        float sphereRadius;
-        float cubeSize;
-        float coneRadius;
-        float coneHeight;
+        Cylinder,
+        Sphere,
+        Cube,
+        Cone
     };
 
     class Scene
     {
     public:
-        /* todo: change to map */
-        std::vector<std::unique_ptr<Shape3D>> quadrics;
-
-        void addQuadric(std::unique_ptr<Shape3D> quadric)
+        void addQuadric(ShapeType type, std::unique_ptr<Shape3D> quadric)
         {
-            quadrics.push_back(std::move(quadric));
+            _quadrics.emplace(type, std::move(quadric));
+        }
+
+        Shape3D* getQuadric(ShapeType type) const
+        {
+            auto it = _quadrics.find(type);
+
+            return (it != _quadrics.end()) ? it->second.get() : nullptr;
         }
 
         void draw()
         {
-            std::for_each(quadrics.begin(),
-                          quadrics.end(),
-                          [](const std::unique_ptr<Shape3D>& q) { q->draw(); });
+            for (const auto& [type, shape] : _quadrics)
+            {
+                shape->draw();
+            }
         }
 
        Scene() = default;
        ~Scene() = default;
+
+    private:
+        std::map<ShapeType, std::unique_ptr<Shape3D>> _quadrics;
     };
 
     static Scene scene1;
@@ -71,6 +76,8 @@ private:
     static float _cameraZ;
 
     static float _zoom;
+
+    void initLight();
 
     void initScene1();
     void initScene2();

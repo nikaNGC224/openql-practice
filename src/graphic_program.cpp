@@ -9,14 +9,6 @@ GraphicProgram::Scene GraphicProgram::scene1;
 GraphicProgram::Scene GraphicProgram::scene2;
 GraphicProgram::Scene GraphicProgram::scene3;
 
-/* GraphicProgram::Scene GraphicProgram::scene1({ 50.0f, 360.0f, 300.0f });
-
-GraphicProgram::Scene GraphicProgram::scene2({  0.0f,  0.0f,   0.0f,
-                                              100.0f, 50.0f, 100.0f });
-
-GraphicProgram::Scene GraphicProgram::scene3({ 50.0f,    50.0f,   50.0f,
-                                               100.0f,  50.0f, 100.0f }); */
-
 float GraphicProgram::_cameraX {300.0f};
 float GraphicProgram::_cameraY {};
 float GraphicProgram::_cameraZ {500.0f};
@@ -28,11 +20,8 @@ void GraphicProgram::init(int argc, char** argv)
     // Инициализация GLUT
     glutInit(&argc, argv);
 
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH);
 
-    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
     glutInitWindowSize(800, 600);
     glutCreateWindow("Graphics");
 
@@ -46,38 +35,45 @@ void GraphicProgram::init(int argc, char** argv)
     glutKeyboardFunc(handleKeyPress);
     glutSpecialFunc(handleSpecialKeyPress);
 
+    /* initLight(); */
+
     initScene1();
     initScene2();
     initScene3();
 }
 
+void GraphicProgram::initLight()
+{
+    /* do */
+}
+
 void GraphicProgram::initScene1()
 {
-    scene1.addQuadric(std::make_unique<Cylinder>(50.0f, 360.0f));
-    scene1.addQuadric(std::make_unique<Sphere>(300.0f));
+    scene1.addQuadric(ShapeType::Cylinder, std::make_unique<Cylinder>(50.0f, 360.0f));
+    scene1.addQuadric(ShapeType::Sphere, std::make_unique<Sphere>(300.0f));
 
-    scene1.quadrics.at(0)->setPosition(50.0f, 40.0f, 0.0f);
-    scene1.quadrics.at(1)->setPosition(50.0f, 40.0f, 0.0f);
+    scene1.getQuadric(ShapeType::Cylinder)->setPosition(50.0f, 40.0f, 0.0f);
+    scene1.getQuadric(ShapeType::Sphere)->setPosition(50.0f, 40.0f, 0.0f);
 }
 
 void GraphicProgram::initScene2()
 {
-    scene2.addQuadric(std::make_unique<Cube>(100.0f));
-    scene2.addQuadric(std::make_unique<Cone>(50.0f, 100.0f));
+    scene2.addQuadric(ShapeType::Cube, std::make_unique<Cube>(100.0f));
+    scene2.addQuadric(ShapeType::Cone, std::make_unique<Cone>(50.0f, 100.0f));
 
-    scene2.quadrics.at(0)->setPosition(0.0f, -100.0f, 50.0f);
-    scene2.quadrics.at(1)->setPosition(0.0f, 100.0f, 0.0f);
+    scene2.getQuadric(ShapeType::Cube)->setPosition(0.0f, -100.0f, 50.0f);
+    scene2.getQuadric(ShapeType::Cone)->setPosition(0.0f, 100.0f, 0.0f);
 }
 
 void GraphicProgram::initScene3()
 {
-    scene3.addQuadric(std::make_unique<Sphere>(50.0f));
-    scene3.addQuadric(std::make_unique<Cube>(100.0f));
-    scene3.addQuadric(std::make_unique<Cone>(50.0f, 100.0f));
+    scene3.addQuadric(ShapeType::Sphere, std::make_unique<Sphere>(50.0f, Shape3D::Mode::Solid));
+    scene3.addQuadric(ShapeType::Cone, std::make_unique<Cone>(50.0f, 100.0f));
+    scene3.addQuadric(ShapeType::Cube, std::make_unique<Cube>(100.0f, Shape3D::Mode::Solid));
 
-    scene3.quadrics.at(0)->setPosition(100.0f, 0.0f, 100.0f);
-    scene3.quadrics.at(1)->setPosition(100.0f, -150.0f, 100.0f);
-    scene3.quadrics.at(2)->setPosition(100.0f, 150.0f, 50.0f);
+    scene3.getQuadric(ShapeType::Sphere)->setPosition(100.0f, 0.0f, 100.0f);
+    scene3.getQuadric(ShapeType::Cone)->setPosition(100.0f, 150.0f, 50.0f);
+    scene3.getQuadric(ShapeType::Cube)->setPosition(100.0f, -150.0f, 100.0f);
 }
 
 void GraphicProgram::start()
@@ -92,7 +88,7 @@ void GraphicProgram::drawLine()
 
     glBegin(GL_LINES);
 
-    /* todo: make universal func for  any line */
+    /* todo: make universal func for any line */
     // Ось X под примитивом (красная)
     glColor3f(    1.0f,    0.0f, 0.0f);
     glVertex3f(-100.0f, -400.0f, 0.0f);
@@ -159,7 +155,6 @@ void GraphicProgram::display()
     glLoadIdentity();
 
     // Позиция камеры
-    /* Возможно, стоит менять zoom, чтобы всё было корректно */
     gluLookAt(_zoom + _cameraX, _cameraY, _zoom,  // Позиция камеры
                       _cameraX, _cameraY,  0.0f,  // Точка, на которую смотрим
                           0.0f,     0.0f,  1.0f); // Вектор "вверх" вдоль оси Z
@@ -219,6 +214,7 @@ void GraphicProgram::displayScene2()
 
 void GraphicProgram::displayScene3()
 {
+    drawGrid();
     drawAxes();
 
     scene3.draw();
@@ -243,22 +239,22 @@ void GraphicProgram::handleMouseButton(int button, int state, int x, int y)
     // Проверяем, прокручено ли колёсико вверх или вниз
     if (button == 3 && state == GLUT_UP)
     {  // Колёсико прокручено вверх
-        _zoom -= STEP_SIZE;  // Уменьшаем значение zoom, чтобы приблизить
+        _zoom -= STEP_SIZE;
         if (_zoom < MIN_ZOOM)
         {
-            _zoom = MIN_ZOOM;  // Ограничиваем минимальное приближение
+            _zoom = MIN_ZOOM;
         }
     }
     else if (button == 4 && state == GLUT_UP)
     {  // Колёсико прокручено вниз
-        _zoom += STEP_SIZE;  // Увеличиваем значение zoom, чтобы отдалить
+        _zoom += STEP_SIZE;
         if (_zoom > MAX_ZOOM)
         {
-            _zoom = MAX_ZOOM;  // Ограничиваем максимальное отдаление
+            _zoom = MAX_ZOOM;
         }
     }
 
-    glutPostRedisplay();  // Перерисовываем сцену
+    glutPostRedisplay();
 }
 
 void GraphicProgram::handleKeyPress(u_char key, int x, int y)
@@ -303,7 +299,7 @@ void GraphicProgram::handleKeyPress(u_char key, int x, int y)
         }
     }
 
-    glutPostRedisplay();  // Перерисовываем сцену
+    glutPostRedisplay();
 }
 
 void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
@@ -314,15 +310,21 @@ void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
         {
             case GLUT_KEY_UP:
             {
-                auto sphere = dynamic_cast<Sphere*>(scene1.quadrics.at(1).get());
-                sphere->incRadius(STEP_SIZE);
+                if (auto* sphere = dynamic_cast<Sphere*>(scene1.getQuadric(ShapeType::Sphere)))
+                {
+                    sphere->incRadius(STEP_SIZE);
+                }
+
                 break;
             }
 
             case GLUT_KEY_DOWN:
             {
-                auto sphere = dynamic_cast<Sphere*>(scene1.quadrics.at(1).get());
-                sphere->decRadius(STEP_SIZE);
+                if (auto* sphere = dynamic_cast<Sphere*>(scene1.getQuadric(ShapeType::Sphere)))
+                {
+                    sphere->decRadius(STEP_SIZE);
+                }
+
                 break;
             }
 
@@ -336,18 +338,25 @@ void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
     {
         switch (key)
         {
-            /* case GLUT_KEY_LEFT:
+            case GLUT_KEY_LEFT:
             {
-                scene2._cone.incRotationAngleX(STEP_SIZE);
-                auto cone = dynamic_cast<Sphere*>(scene2.quadrics.at(1).get());
+                if (auto* cone = dynamic_cast<Cone*>(scene2.getQuadric(ShapeType::Cone)))
+                {
+                    cone->incRotationAngleX(STEP_SIZE);
+                }
+
                 break;
             }
 
             case GLUT_KEY_RIGHT:
             {
-                scene2._cone.decRotationAngleX(STEP_SIZE);
+                if (auto* cone = dynamic_cast<Cone*>(scene2.getQuadric(ShapeType::Cone)))
+                {
+                    cone->decRotationAngleX(STEP_SIZE);
+                }
+
                 break;
-            } */
+            }
 
             default:
             {
