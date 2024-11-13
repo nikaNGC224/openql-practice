@@ -37,7 +37,7 @@ private:
     float _height;
     float _rotationAngleX{};
 
-    void drawShape() const override
+    void drawShape() override
     {
         glColor3f(1.0f, 1.0f, 1.0f); // Белый цвет
         glRotatef(_rotationAngleX, 1.0f, 0.0f, 0.0f);

@@ -18,7 +18,7 @@ public:
         gluDeleteQuadric(_quadric);
     }
 
-    void draw() const
+    void draw()
     {
         glPushMatrix();  // Сохраняем текущую матрицу
         glTranslatef(_x, _y, _z);
@@ -49,7 +49,7 @@ protected:
     }
 
 private:
-    virtual void drawShape() const = 0;
+    virtual void drawShape() = 0;
 };
 
 #endif

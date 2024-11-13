@@ -17,7 +17,7 @@ public:
 private:
     float _size;
 
-    void drawShape() const override
+    void drawShape() override
     {
         if (_mode == Mode::Wire)
         {
@@ -26,8 +26,15 @@ private:
         }
         else
         {
-            glColor4f(1.0f, 0.0f, 0.0f, 0.6f);  // Красный цвет с альфа = 0.6 (полупрозрачный)
-            glutSolidCube(_size);  // Рисуем куб размером 1.0
+            glDepthMask(GL_FALSE);                              // Отключаем запись в буфер глубины
+            glEnable(GL_BLEND);                                 // Включаем смешивание
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // Настраиваем функцию смешивания
+
+            glColor4f(0.0117f, 0.5859f, 0.367f, 0.7f);
+            glutSolidCube(_size);
+
+            glDisable(GL_BLEND);                      // Отключаем смешивание
+            glDepthMask(GL_TRUE);                     // Включаем запись в буфер глубины
         }
     }
 };

@@ -16,7 +16,7 @@ private:
     float _radius;
     float _height;
 
-    void drawShape() const override
+    void drawShape() override
     {
         glColor3f(1.0f, 1.0f, 1.0f); // Белый цвет цилиндра
         gluCylinder(_quadric, _radius, _radius, _height, SLICES, STACKS);
