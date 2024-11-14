@@ -13,6 +13,10 @@ float GraphicProgram::_cameraX {300.0f};
 float GraphicProgram::_cameraY {};
 float GraphicProgram::_cameraZ {500.0f};
 
+float GraphicProgram::_lightX {200.0f};
+float GraphicProgram::_lightY {};
+float GraphicProgram::_lightZ {};
+
 float GraphicProgram::_zoom {500.0f};
 
 void GraphicProgram::init(int argc, char** argv)
@@ -35,7 +39,7 @@ void GraphicProgram::init(int argc, char** argv)
     glutKeyboardFunc(handleKeyPress);
     glutSpecialFunc(handleSpecialKeyPress);
 
-    /* initLight(); */
+    initLight();
 
     initScene1();
     initScene2();
@@ -44,7 +48,16 @@ void GraphicProgram::init(int argc, char** argv)
 
 void GraphicProgram::initLight()
 {
-    /* do */
+    glEnable(GL_LIGHT0);         // Включаем источник света 0
+
+    // Настраиваем базовые параметры света
+    GLfloat light_ambient[] {0.2f, 0.2f, 0.2f, 1.0f};  // Фоновый свет
+    GLfloat light_diffuse[] {1.0f, 1.0f, 1.0f, 1.0f};  // Диффузное освещение
+    GLfloat light_specular[] {1.0f, 1.0f, 1.0f, 1.0f}; // Зеркальное освещение
+
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
 }
 
 void GraphicProgram::initScene1()
@@ -71,9 +84,13 @@ void GraphicProgram::initScene3()
     scene3.addQuadric(ShapeType::Cone, std::make_unique<Cone>(50.0f, 100.0f));
     scene3.addQuadric(ShapeType::Cube, std::make_unique<Cube>(100.0f, Shape3D::Mode::Solid));
 
+    scene3.addQuadric(ShapeType::Light, std::make_unique<Sphere>(5.0f));
+
     scene3.getQuadric(ShapeType::Sphere)->setPosition(100.0f, 0.0f, 100.0f);
     scene3.getQuadric(ShapeType::Cone)->setPosition(100.0f, 150.0f, 50.0f);
     scene3.getQuadric(ShapeType::Cube)->setPosition(100.0f, -150.0f, 100.0f);
+
+    scene3.getQuadric(ShapeType::Light)->setPosition(0.0f, 0.0f, 500.0f);
 }
 
 void GraphicProgram::start()
@@ -217,7 +234,22 @@ void GraphicProgram::displayScene3()
     drawGrid();
     drawAxes();
 
+    glEnable(GL_LIGHTING); // Включаем освещение
+
+    // Обновляем позицию источника света
+    GLfloat light_position[] {_lightX, _lightY, _lightZ, 1.0f};
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+
+    // Отрисовка сферического "шарика" для визуализации позиции света
+    glPushMatrix();
+    glTranslatef(_lightX, _lightY, _lightZ);
+    glColor3f(1.0f, 1.0f, 0.0f);   // Жёлтый цвет "шарика"
+    glutSolidSphere(0.1, 20, 20);  // Маленькая сфера
+    glPopMatrix();
+
     scene3.draw();
+
+    glDisable(GL_LIGHTING);
 }
 
 void GraphicProgram::reshape(int w, int h)
@@ -355,6 +387,40 @@ void GraphicProgram::handleSpecialKeyPress(int key, int x, int y)
                     cone->decRotationAngleX(STEP_SIZE);
                 }
 
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
+        }
+    }
+    else if (_sceneIndex == 2)
+    {
+        switch (key)
+        {
+            case GLUT_KEY_UP:
+            {
+                _lightY += STEP_SIZE;  // Двигаем свет вверх
+                break;
+            }
+
+            case GLUT_KEY_DOWN:
+            {
+                _lightY -= STEP_SIZE;  // Двигаем свет вниз
+                break;
+            }
+
+            case GLUT_KEY_LEFT:
+            {
+                _lightZ -= STEP_SIZE;  // Двигаем свет "назад" (по оси Z)
+                break;
+            }
+
+            case GLUT_KEY_RIGHT:
+            {
+                _lightZ += STEP_SIZE;  // Двигаем свет "вперёд" (по оси Z)
                 break;
             }
 

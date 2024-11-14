@@ -33,7 +33,8 @@ private:
         Cylinder,
         Sphere,
         Cube,
-        Cone
+        Cone,
+        Light
     };
 
     class Scene
@@ -74,6 +75,10 @@ private:
     static float _cameraX;
     static float _cameraY;
     static float _cameraZ;
+
+    static float _lightX;
+    static float _lightY;
+    static float _lightZ;
 
     static float _zoom;
 
