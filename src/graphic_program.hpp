@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 #include <algorithm>
-#include <map>
+#include <unordered_map>
 
 class GraphicProgram
 {
@@ -64,7 +64,7 @@ private:
        ~Scene() = default;
 
     private:
-        std::map<ShapeType, std::unique_ptr<Shape3D>> _quadrics;
+        std::unordered_map<ShapeType, std::unique_ptr<Shape3D>> _quadrics;
     };
 
     static Scene scene1;
@@ -95,6 +95,8 @@ private:
     static void displayScene1();
     static void displayScene2();
     static void displayScene3();
+
+    static void moveLightAndSphere(float dx, float dy, float dz);
 
     static void reshape(int w, int h);
 
