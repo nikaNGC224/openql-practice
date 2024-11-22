@@ -12,6 +12,11 @@ public:
         : Shape3D(), _radius(radius), _height(height)
     {}
 
+    bool isTransparent() const override
+    {
+        return false;
+    }
+
 private:
     float _radius;
     float _height;

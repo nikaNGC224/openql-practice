@@ -8,9 +8,25 @@ class Cone : public Shape3D
 public:
     Cone() = delete;
 
-    Cone(float radius, float height)
+    Cone(float radius, float height, Mode mode = Mode::Wire)
         : Shape3D(), _radius(radius), _height(height)
-    {}
+    {
+        _mode = mode;
+
+        if (_mode == Mode::Solid)
+        {
+            std::array<GLfloat, 4> amb {0.2f, 0.2f, 0.2f, 1.0f};
+            std::array<GLfloat, 4> dif {0.6f, 0.6f, 0.6f, 1.0f};
+            std::array<GLfloat, 4> spe {0.0f, 0.0f, 0.0f, 1.0f};
+            GLfloat shin {};
+            _material = Material(amb, dif, spe, shin);
+        }
+    }
+
+    bool isTransparent() const override
+    {
+        return false;
+    }
 
     void incRotationAngleX(float incStep)
     {
@@ -39,9 +55,20 @@ private:
 
     void drawShape() override
     {
-        glColor3f(1.0f, 1.0f, 1.0f); // Белый цвет
-        glRotatef(_rotationAngleX, 1.0f, 0.0f, 0.0f);
-        glutWireCone(_radius, _height, SLICES, STACKS);
+        if (_mode == Mode::Wire)
+        {
+            glColor3f(1.0f, 1.0f, 1.0f); // Белый цвет
+            glRotatef(_rotationAngleX, 1.0f, 0.0f, 0.0f);
+            glutWireCone(_radius, _height, SLICES, STACKS);
+        }
+        else
+        {
+            glEnable(GL_LIGHTING);
+            applyMaterial();
+            glutSolidCone(_radius, _height, SLICES, STACKS);
+
+            glDisable(GL_LIGHTING);
+        }
     }
 };
 

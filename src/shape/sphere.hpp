@@ -10,6 +10,19 @@ public:
         : Shape3D(), _radius(radius), MIN_RADIUS(radius), MAX_RADIUS(radius * 1.5f)
     {
         _mode = mode;
+
+        if (_mode == Mode::Solid) {
+            std::array<GLfloat, 4> amb = {0.2f, 0.2f, 0.2f, 1.0f};
+            std::array<GLfloat, 4> dif = {0.6f, 0.6f, 0.6f, 1.0f};
+            std::array<GLfloat, 4> spe = {1.0f, 1.0f, 1.0f, 1.0f};
+            GLfloat shin = 128.0f;
+            _material = Material(amb, dif, spe, shin);
+        }
+    }
+
+    bool isTransparent() const override
+    {
+        return false;
     }
 
     void incRadius(float incStep)
@@ -48,46 +61,15 @@ private:
         }
         else
         {
-            glPushMatrix();
-            glEnable(GL_LIGHTING); // Включаем освещение
-            //setShiny();
+            glEnable(GL_LIGHTING);
+            applyMaterial();
 
             // Рисуем сферу
             glutSolidSphere(_radius, SOLID_SLICES, SOLID_STACKS);
 
-            //removeShiny();
-            glDisable(GL_LIGHTING); // Включаем освещение
-            glPopMatrix();
+            glDisable(GL_LIGHTING);
         }
     }
-
-    /* void setShiny()
-    {
-        // Устанавливаем блестящий материал для сферы
-        GLfloat mat_specular[] = {1.0f, 1.0f, 1.0f, 1.0f};    // Яркий белый блик
-        GLfloat mat_diffuse[] = {0.6f, 0.6f, 0.6f, 1.0f};     // Основной цвет сферы
-        GLfloat mat_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};     // Фоновый цвет
-        GLfloat mat_shininess[] = {128.0f};                    // Максимальное значение блеска
-
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-        glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-        glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-    } */
-
-    /* void removeShiny()
-    {
-        // Сбрасываем материал на стандартные параметры для других фигур
-        GLfloat mat_specular[] = {0.0f, 0.0f, 0.0f, 1.0f};    // Нет бликов
-        GLfloat mat_diffuse[] = {0.8f, 0.8f, 0.8f, 1.0f};     // Светло-серый цвет
-        GLfloat mat_ambient[] = {0.2f, 0.2f, 0.2f, 1.0f};     // Фоновый цвет
-        GLfloat mat_shininess[] = {0.0f};                      // Без блеска
-
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
-        glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
-        glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
-    } */
 };
 
 #endif

@@ -12,10 +12,21 @@ public:
         : Shape3D(), _size(size)
     {
         _mode = mode;
+
+        if (_mode == Mode::Solid)
+        {
+            _transparent = true;
+        }
+    }
+
+    bool isTransparent() const override
+    {
+        return _transparent;
     }
 
 private:
     float _size;
+    bool _transparent {false};
 
     void drawShape() override
     {
@@ -26,15 +37,8 @@ private:
         }
         else
         {
-            glDepthMask(GL_FALSE);                              // Отключаем запись в буфер глубины
-            glEnable(GL_BLEND);                                 // Включаем смешивание
-            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // Настраиваем функцию смешивания
-
-            glColor4f(0.0117f, 0.5859f, 0.367f, 0.7f);
+            glColor4f(0.0117f, 0.5859f, 0.367f, 0.6f);
             glutSolidCube(_size);
-
-            glDisable(GL_BLEND);                      // Отключаем смешивание
-            glDepthMask(GL_TRUE);                     // Включаем запись в буфер глубины
         }
     }
 };
