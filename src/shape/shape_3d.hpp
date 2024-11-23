@@ -5,7 +5,24 @@
 #include <GL/glu.h>
 
 #include <array>
-#include <cmath>
+
+struct Vector3
+{
+    float x, y, z;
+
+    Vector3(float x = 0.0f, float y = 0.0f, float z = 0.0f)
+        : x(x), y(y), z(z) {}
+
+    Vector3 operator+(const Vector3& other) const
+    {
+        return Vector3(x + other.x, y + other.y, z + other.z);
+    }
+
+    Vector3 operator-(const Vector3& other) const
+    {
+        return Vector3(x - other.x, y - other.y, z - other.z);
+    }
+};
 
 class Shape3D
 {
@@ -34,9 +51,16 @@ public:
         glPopMatrix();  // Восстанавливаем матрицу
     }
 
-    float distanceToCamera(float camX, float camY, float camZ) const
+    Vector3 getPosition() const
     {
-        return std::sqrt(std::pow(_x - camX, 2) + std::pow(_y - camY, 2) + std::pow(_z - camZ, 2));
+        return Vector3(_x, _y, _z);
+    }
+
+    void setPosition(const Vector3& pos)
+    {
+        _x = pos.x;
+        _y = pos.y;
+        _z = pos.z;
     }
 
     void setPosition(float x, float y, float z)

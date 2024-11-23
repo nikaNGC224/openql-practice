@@ -47,8 +47,8 @@ private:
     const float MIN_RADIUS;
     const float MAX_RADIUS;
 
-    const float SOLID_SLICES{40};
-    const float SOLID_STACKS{40};
+    const float SOLID_SLICES{100};
+    const float SOLID_STACKS{100};
 
     float _radius;
 

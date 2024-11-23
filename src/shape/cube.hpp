@@ -37,8 +37,18 @@ private:
         }
         else
         {
+            glDisable(GL_LIGHTING);
+            // Подготовка для рендеринга прозрачных объектов
+            glDepthMask(GL_FALSE); // Отключаем запись в буфер глубины
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
             glColor4f(0.0117f, 0.5859f, 0.367f, 0.6f);
             glutSolidCube(_size);
+
+            // Завершаем настройки
+            glDisable(GL_BLEND);
+            glDepthMask(GL_TRUE);
         }
     }
 };

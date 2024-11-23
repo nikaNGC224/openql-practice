@@ -5,12 +5,8 @@
 #include "shape/sphere.hpp"
 #include "shape/cube.hpp"
 #include "shape/cone.hpp"
-#include "scene.hpp"
-
-#include <memory>
-#include <vector>
-#include <algorithm>
-#include <unordered_map>
+#include "scene/scene.hpp"
+#include "light.hpp"
 
 class GraphicProgram
 {
@@ -23,9 +19,7 @@ public:
 
 private:
     static constexpr float STEP_SIZE {10.0f};
-    static constexpr float MIN_ZOOM {100.0f};
-    static constexpr float MAX_ZOOM {2000.0f};
-    static constexpr float LOOK_RADIUS {20.f};
+    static constexpr float SENSITIVITY = 0.1f;
 
     static int _sceneIndex;
 
@@ -37,7 +31,11 @@ private:
     static float _lightY;
     static float _lightZ;
 
-    static float _zoom;
+    static Light _light;
+
+    static bool _isDragging; // Флаг удержания кнопки мыши
+    static int _lastMouseX;      // Последняя позиция мыши по X
+    static int _lastMouseY;      // Последняя позиция мыши по Y
 
     void initLight();
 
@@ -58,6 +56,7 @@ private:
     static void reshape(int w, int h);
 
     static void handleMouseButton(int button, int state, int x, int y);
+    static void handleMouseMotion(int x, int y);
     static void handleKeyPress(u_char key, int x, int y);
     static void handleSpecialKeyPress(int key, int x, int y);
 };

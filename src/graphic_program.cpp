@@ -1,8 +1,5 @@
 #include "graphic_program.hpp"
 
-#include <cmath>
-#include <iostream>
-
 /* static fields */
 int GraphicProgram::_sceneIndex {};
 
@@ -10,15 +7,17 @@ Scene GraphicProgram::_scene1;
 Scene GraphicProgram::_scene2;
 Scene GraphicProgram::_scene3;
 
-float CameraPos::cameraX {300.0f};
-float CameraPos::cameraY {};
-float CameraPos::cameraZ {500.0f};
+Camera Scene::camera;
 
 float GraphicProgram::_lightX {};
 float GraphicProgram::_lightY {};
 float GraphicProgram::_lightZ {};
 
-float GraphicProgram::_zoom {500.0f};
+Light GraphicProgram::_light(GL_LIGHT0);
+
+bool GraphicProgram::_isDragging {false};
+int GraphicProgram::_lastMouseX {};
+int GraphicProgram::_lastMouseY {};
 
 void GraphicProgram::init(int argc, char** argv)
 {
@@ -40,6 +39,7 @@ void GraphicProgram::init(int argc, char** argv)
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutMouseFunc(handleMouseButton);
+    glutMotionFunc(handleMouseMotion);
     glutKeyboardFunc(handleKeyPress);
     glutSpecialFunc(handleSpecialKeyPress);
 
@@ -52,16 +52,11 @@ void GraphicProgram::init(int argc, char** argv)
 
 void GraphicProgram::initLight()
 {
-    glEnable(GL_LIGHT0);
-
-    /* base parameters of light */
-    GLfloat light_ambient[] {0.2f, 0.2f, 0.2f, 1.0f};  // Фоновый свет
-    GLfloat light_diffuse[] {1.0f, 1.0f, 1.0f, 1.0f};  // Диффузное освещение
-    GLfloat light_specular[] {1.0f, 1.0f, 1.0f, 1.0f}; // Зеркальное освещение
-
-    glLightfv(GL_LIGHT0, GL_AMBIENT, light_ambient);
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, light_diffuse);
-    glLightfv(GL_LIGHT0, GL_SPECULAR, light_specular);
+    _light.enable();
+    _light.setAmbient({0.2f, 0.2f, 0.2f, 1.0f});
+    _light.setDiffuse({1.0f, 1.0f, 1.0f, 1.0f});
+    _light.setSpecular({1.0f, 1.0f, 1.0f, 1.0f});
+    _light.setPosition({_lightX, _lightY, _lightZ, 1.0f});
 }
 
 void GraphicProgram::initScene1()
@@ -85,13 +80,13 @@ void GraphicProgram::initScene2()
 void GraphicProgram::initScene3()
 {
     _scene3.addShape(Scene::ShapeType::Sphere, std::make_unique<Sphere>(50.0f, Shape3D::Mode::Solid));
-    _scene3.addShape(Scene::ShapeType::Cone, std::make_unique<Cone>(50.0f, 100.0f, Shape3D::Mode::Solid));
+    //_scene3.addShape(Scene::ShapeType::Cone, std::make_unique<Cone>(50.0f, 100.0f, Shape3D::Mode::Solid));
     _scene3.addShape(Scene::ShapeType::Cube, std::make_unique<Cube>(100.0f, Shape3D::Mode::Solid));
 
     _scene3.addShape(Scene::ShapeType::Light, std::make_unique<Sphere>(5.0f));
 
     _scene3.getQuadric(Scene::ShapeType::Sphere)->setPosition(100.0f, 0.0f, 100.0f);
-    _scene3.getQuadric(Scene::ShapeType::Cone)->setPosition(100.0f, 150.0f, 50.0f);
+    //_scene3.getQuadric(Scene::ShapeType::Cone)->setPosition(100.0f, 150.0f, 50.0f);
     _scene3.getQuadric(Scene::ShapeType::Cube)->setPosition(100.0f, -150.0f, 100.0f);
 
     _scene3.getQuadric(Scene::ShapeType::Light)->setPosition(_lightX, _lightY, _lightZ);
@@ -175,9 +170,11 @@ void GraphicProgram::display()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
 
-    gluLookAt(_zoom + CameraPos::cameraX, CameraPos::cameraY, _zoom,  // Позиция камеры
-                      CameraPos::cameraX, CameraPos::cameraY,  0.0f,  // Точка, на которую смотрим
-                          0.0f,     0.0f,  1.0f); // Вектор "вверх" вдоль оси Z
+    Vector3 cameraPos = Scene::camera.getPosition();
+
+    gluLookAt(cameraPos.x, cameraPos.y, cameraPos.z,  // Позиция камеры
+              0.0f, 0.0f, 0.0f,                      // Точка, на которую смотрим
+              0.0f, 0.0f, 1.0f);                     // Вектор "вверх"
 
     /* add map */
     switch (_sceneIndex)
@@ -231,8 +228,7 @@ void GraphicProgram::displayScene3()
     drawGrid();
     drawAxes();
 
-    GLfloat light_position[] {_lightZ, _lightY, _lightX, 1.0f};
-    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
+    _light.setPosition({_lightX, _lightY, _lightZ, 1.0f});
 
     _scene3.draw();
 }
@@ -243,6 +239,7 @@ void GraphicProgram::moveLightAndSphere(float dx, float dy, float dz)
     _lightY += dy;
     _lightZ += dz;
 
+    _light.updatePosition({_lightX, _lightY, _lightZ, 1.0f});
     _scene3.getQuadric(Scene::ShapeType::Light)->setPosition(_lightX, _lightY, _lightZ);
 }
 
@@ -252,69 +249,68 @@ void GraphicProgram::reshape(int w, int h)
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0, static_cast<double>(w) / static_cast<double>(h), MIN_ZOOM, MAX_ZOOM);
+    gluPerspective(45.0, static_cast<double>(w) / static_cast<double>(h), Camera::MIN_ZOOM, Camera::MAX_ZOOM);
 
     glMatrixMode(GL_MODELVIEW);
 }
 
 void GraphicProgram::handleMouseButton(int button, int state, int x, int y)
 {
-    /* check scroll */
-    if (button == 3 && state == GLUT_UP)
+    if (button == GLUT_LEFT_BUTTON)
     {
-        _zoom -= STEP_SIZE;
-        if (_zoom < MIN_ZOOM)
+        if (state == GLUT_DOWN)
         {
-            _zoom = MIN_ZOOM;
+            _isDragging = true;
+            _lastMouseX = x;
+            _lastMouseY = y;
+        }
+        else if (state == GLUT_UP)
+        {
+            _isDragging = false;
         }
     }
-    else if (button == 4 && state == GLUT_UP)
+
+    // Управление зумом через колёсико мыши
+    if (button == 3 && state == GLUT_UP) // Прокрутка вверх
     {
-        _zoom += STEP_SIZE;
-        if (_zoom > MAX_ZOOM)
-        {
-            _zoom = MAX_ZOOM;
-        }
+        Scene::camera.adjustRadius(-STEP_SIZE);
+    }
+    else if (button == 4 && state == GLUT_UP) // Прокрутка вниз
+    {
+        Scene::camera.adjustRadius(STEP_SIZE);
     }
 
     glutPostRedisplay();
 }
+
+void GraphicProgram::handleMouseMotion(int x, int y)
+{
+    if (_isDragging)
+    {
+        int deltaX = x - _lastMouseX;
+        int deltaY = y - _lastMouseY;
+
+        Scene::camera.adjustAzimuth(static_cast<float>(-deltaX) * SENSITIVITY); // Горизонтальное вращение
+        Scene::camera.adjustZenith(static_cast<float>(-deltaY) * SENSITIVITY); // Вертикальный наклон
+
+        _lastMouseX = x;
+        _lastMouseY = y;
+
+        glutPostRedisplay();
+    }
+}
+
 
 void GraphicProgram::handleKeyPress(u_char key, int x, int y)
 {
     /* enum class or smth like that */
     switch (key)
     {
-        case 'w':
-        case 'W':
-        {
-            CameraPos::cameraX -= STEP_SIZE;
-            break;
-        }
-
-        case 's':
-        case 'S':
-        {
-            CameraPos::cameraX += STEP_SIZE;
-            break;
-        }
-
-        case 'a':
-        case 'A':
-        {
-            CameraPos::cameraY -= STEP_SIZE;
-            break;
-        }
-
-        case 'd':
-        case 'D':
-        {
-            CameraPos::cameraY += STEP_SIZE;
-            break;
-        }
-
         case '\t':
+        {
             _sceneIndex = (_sceneIndex + 1) % 3;
+            break;
+        }
 
         default:
         {
